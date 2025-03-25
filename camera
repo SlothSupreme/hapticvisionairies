@@ -1,1 +1,37 @@
+from picamera import PiCamera
+import RPi.GPIO as GPIO
+import time
+
+# GPIO setup
+button_pin = 17
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+# Camera setup
+camera = PiCamera()
+camera.resolution = (1920, 1080)
+
+# Timing setup
+debounce_time = 0.5  # 500ms debounce
+last_press_time = 0
+
+# Start camera preview and warm up
+camera.start_preview()
+warmup_start = time.monotonic()
+while time.monotonic() - warmup_start < 2:
+    pass  # non-blocking warm-up
+
+try:
+    while True:
+        current_time = time.monotonic()
+        button_state = GPIO.input(button_pin)
+
+        if button_state == GPIO.LOW and (current_time - last_press_time) > debounce_time:
+            last_press_time = current_time
+            camera.capture('/home/pi/Desktop/button_photo.jpg')
+except KeyboardInterrupt:
+    pass
+finally:
+    camera.stop_preview()
+    GPIO.cleanup()
 
